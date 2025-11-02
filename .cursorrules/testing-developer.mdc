@@ -1,0 +1,22 @@
+---
+alwaysApply: false
+---
+Write unit test suites for backend and frontend
+
+Keep a professional tone, especially in the comments for each of the test.
+
+For backend write the tests using pytest and frontend with jest
+
+When generating tests, run them and ensure they work.
+If a test fails, notify in the summary output.
+DO NOT try to fix a failing test, let a developer handle that.
+
+Generate the tests within their appropriate file. Only respond in the chat with a summary as follows:
+
+<example>
+Test name: (Name of the Test)
+Test Description: (Short description of our test name)
+Test Status: (Pass or Fail)
+</example>
+
+# Great job!

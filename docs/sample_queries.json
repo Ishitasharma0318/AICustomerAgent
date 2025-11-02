@@ -1,0 +1,103 @@
+{
+  "technical_queries": [
+    "My Lambda function is timing out after 3 seconds, what should I check?",
+    "What does error code 502 Bad Gateway mean in API Gateway?",
+    "How do I fix Lambda cold start issues?",
+    "I'm getting 'Task timed out after 30.00 seconds' error in Lambda",
+    "API Gateway returns 504 Gateway Timeout, how do I debug this?",
+    "Lambda function fails with 'Permission denied' error when accessing S3",
+    "How do I read CloudWatch logs to debug Lambda errors?",
+    "My Lambda function runs out of memory, how can I fix this?",
+    "API Gateway integration with Lambda is failing with 500 errors",
+    "How do I troubleshoot Lambda VPC connectivity issues?",
+    "What causes 'Unable to import module' error in Lambda?",
+    "Lambda concurrent execution limit exceeded, what should I do?",
+    "How do I fix CORS errors in API Gateway?",
+    "API Gateway throttling my requests, how to identify the cause?",
+    "Lambda function works locally but fails in AWS, how to debug?"
+  ],
+  "configuration_queries": [
+    "What are the best practices for Lambda function design?",
+    "How should I configure IAM roles for Lambda to access DynamoDB?",
+    "What's the recommended way to handle secrets in Lambda?",
+    "How do I set up CORS properly in API Gateway?",
+    "What are the security best practices for API Gateway?",
+    "Should I use Lambda layers or include dependencies in the deployment package?",
+    "How do I implement proper error handling in Lambda functions?",
+    "What's the best way to structure a serverless application?",
+    "How should I configure Lambda environment variables?",
+    "What authorization method should I use for API Gateway?",
+    "How do I set up custom domain names for API Gateway?",
+    "What are the best practices for Lambda VPC configuration?",
+    "How should I version my APIs in API Gateway?",
+    "What's the recommended Lambda memory size configuration?",
+    "How do I implement rate limiting in API Gateway?"
+  ],
+  "billing_queries": [
+    "How much does Lambda cost per million requests?",
+    "What's included in the Lambda free tier?",
+    "Is API Gateway HTTP API cheaper than REST API?",
+    "How can I reduce my Lambda costs?",
+    "What's the cost difference between x86 and ARM Lambda functions?",
+    "How much does it cost to store CloudWatch logs for Lambda?",
+    "What's the pricing for provisioned concurrency in Lambda?",
+    "How do I estimate my monthly API Gateway costs?",
+    "Does Lambda charge for failed invocations?",
+    "What are the data transfer costs for Lambda?",
+    "How much does API Gateway caching cost?",
+    "What's the cost of running Lambda in a VPC?",
+    "How can I optimize costs for high-traffic Lambda applications?",
+    "Is there a charge for Lambda cold starts?",
+    "How much does it cost to run Lambda with 1GB memory vs 512MB?"
+  ],
+  "multi_category_queries": [
+    "My Lambda is too expensive, how can I optimize both cost and performance?",
+    "What's the best security configuration for Lambda and how much does it add to the cost?",
+    "I'm getting timeout errors and high costs, what should I do?",
+    "How do I set up monitoring without increasing my AWS bill significantly?"
+  ],
+  "expected_routing": {
+    "technical_queries": "Should route to Technical Support Agent (Pure RAG)",
+    "configuration_queries": "Should route to Configuration & Best Practices Agent (Pure CAG)",
+    "billing_queries": "Should route to Billing & Pricing Agent (Hybrid RAG/CAG)",
+    "multi_category_queries": "May require supervisor to route to multiple agents or make intelligent decisions"
+  },
+  "test_conversation_flows": [
+    {
+      "conversation_id": "conv_001",
+      "messages": [
+        {
+          "user": "My Lambda function is timing out",
+          "expected_agent": "technical",
+          "expected_topics": ["timeout", "configuration", "debugging"]
+        },
+        {
+          "user": "How can I optimize it to reduce costs?",
+          "expected_agent": "billing",
+          "expected_topics": ["cost optimization", "performance"]
+        },
+        {
+          "user": "What's the best practice for handling this?",
+          "expected_agent": "configuration",
+          "expected_topics": ["best practices", "timeout handling"]
+        }
+      ]
+    },
+    {
+      "conversation_id": "conv_002",
+      "messages": [
+        {
+          "user": "How much does Lambda cost?",
+          "expected_agent": "billing",
+          "expected_topics": ["pricing", "requests", "duration"]
+        },
+        {
+          "user": "What if I'm still in the free tier?",
+          "expected_agent": "billing",
+          "expected_topics": ["free tier", "limits"]
+        }
+      ]
+    }
+  ]
+}
+
