@@ -107,7 +107,8 @@ async def chat(request: ChatRequest):
         
         # Determine which agent handled the request
         routing_decision = result.get("routing_decision", {})
-        agent_type_str = routing_decision.get("next_agent", "supervisor")
+        # Try to get agent_type first, then fall back to next_agent
+        agent_type_str = routing_decision.get("agent_type") or routing_decision.get("next_agent", "supervisor")
         
         # Map agent string to AgentType enum
         agent_type_map = {
@@ -119,7 +120,16 @@ async def chat(request: ChatRequest):
         agent_type = agent_type_map.get(agent_type_str, AgentType.SUPERVISOR)
         
         # Extract sources if available
-        sources = routing_decision.get("sources", [])
+        sources_raw = routing_decision.get("sources", [])
+        # Convert source dictionaries to strings (filenames only)
+        sources = []
+        for source in sources_raw:
+            if isinstance(source, dict):
+                sources.append(source.get("filename", "Unknown"))
+            elif isinstance(source, str):
+                sources.append(source)
+            else:
+                sources.append(str(source))
         
         # Log successful response
         duration = (datetime.now() - start_time).total_seconds()
@@ -230,8 +240,17 @@ async def chat_stream(request: ChatRequest):
                     
                     # Get routing decision
                     routing_decision = final_result.get("routing_decision", {})
-                    agent_type_str = routing_decision.get("next_agent", "supervisor")
-                    sources = routing_decision.get("sources", [])
+                    agent_type_str = routing_decision.get("agent_type") or routing_decision.get("next_agent", "supervisor")
+                    sources_raw = routing_decision.get("sources", [])
+                    # Convert source dictionaries to strings (filenames only)
+                    sources = []
+                    for source in sources_raw:
+                        if isinstance(source, dict):
+                            sources.append(source.get("filename", "Unknown"))
+                        elif isinstance(source, str):
+                            sources.append(source)
+                        else:
+                            sources.append(str(source))
                 
                 # Stream progress updates
                 for node_name, node_output in event.items():

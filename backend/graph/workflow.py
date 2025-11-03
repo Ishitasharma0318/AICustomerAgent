@@ -143,14 +143,19 @@ async def technical_node(state: AgentState) -> AgentState:
     # Create AI message with response
     ai_message = AIMessage(content=response["response"])
     
-    # Update routing decision with sources
+    # Update routing decision with sources and agent type
     routing_decision = state.get("routing_decision", {})
     routing_decision["sources"] = response.get("sources", [])
+    routing_decision["agent_type"] = "technical"
+    routing_decision["next_agent"] = "technical"
+    
+    # Update state - append AI message to existing messages
+    existing_messages = state.get("messages", [])
     
     # Update state
     return {
         **state,
-        "messages": [ai_message],
+        "messages": existing_messages + [ai_message],
         "next_agent": "end",
         "routing_decision": routing_decision
     }
@@ -182,14 +187,19 @@ async def configuration_node(state: AgentState) -> AgentState:
     # Create AI message with response
     ai_message = AIMessage(content=response["response"])
     
-    # Update routing decision with sources
+    # Update routing decision with sources and agent type
     routing_decision = state.get("routing_decision", {})
     routing_decision["sources"] = response.get("sources", [])
+    routing_decision["agent_type"] = "configuration"
+    routing_decision["next_agent"] = "configuration"
+    
+    # Update state - append AI message to existing messages
+    existing_messages = state.get("messages", [])
     
     # Update state
     return {
         **state,
-        "messages": [ai_message],
+        "messages": existing_messages + [ai_message],
         "next_agent": "end",
         "routing_decision": routing_decision
     }
@@ -221,14 +231,19 @@ async def billing_node(state: AgentState) -> AgentState:
     # Create AI message with response
     ai_message = AIMessage(content=response["response"])
     
-    # Update routing decision with sources
+    # Update routing decision with sources and agent type
     routing_decision = state.get("routing_decision", {})
     routing_decision["sources"] = response.get("sources", [])
+    routing_decision["agent_type"] = "billing"
+    routing_decision["next_agent"] = "billing"
+    
+    # Update state - append AI message to existing messages
+    existing_messages = state.get("messages", [])
     
     # Update state
     return {
         **state,
-        "messages": [ai_message],
+        "messages": existing_messages + [ai_message],
         "next_agent": "end",
         "routing_decision": routing_decision
     }
