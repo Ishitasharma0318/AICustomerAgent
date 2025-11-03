@@ -1,0 +1,53 @@
+{
+  "timestamp": "2025-11-03T09:56:31.202487",
+  "total_duration": 161.5435881614685,
+  "results": [
+    {
+      "name": "1. Environment & Connections",
+      "passed": false,
+      "duration": 27.000285863876343,
+      "details": "Completed in 27.00s",
+      "error": ""
+    },
+    {
+      "name": "2. Vector Database Retrieval",
+      "passed": true,
+      "duration": 2.245166778564453,
+      "details": "Completed in 2.25s",
+      "error": ""
+    },
+    {
+      "name": "3. Individual Agents",
+      "passed": true,
+      "duration": 61.334277868270874,
+      "details": "Completed in 61.33s",
+      "error": ""
+    },
+    {
+      "name": "4. API Integration",
+      "passed": false,
+      "duration": 29.213923931121826,
+      "details": "Completed in 29.21s",
+      "error": ""
+    },
+    {
+      "name": "5. Workflow Integration",
+      "passed": true,
+      "duration": 41.74926495552063,
+      "details": "Completed in 41.75s",
+      "error": ""
+    },
+    {
+      "name": "6. Frontend Integration",
+      "passed": true,
+      "duration": 2.5033950805664062e-05,
+      "details": "Completed in 0.00s",
+      "error": ""
+    }
+  ],
+  "summary": {
+    "total": 6,
+    "passed": 4,
+    "failed": 2
+  }
+}
