@@ -127,9 +127,7 @@ AI_Customer_Agent/
 └── docs/                    # Documentation
 ```
 
-## 🎥 Demo Queries
 
-Test each agent with these example queries:
 
 **Technical Support:**
 - "My Lambda function is returning a 502 error"
@@ -185,7 +183,6 @@ python test_agents.py
 
 - **Setup Guide**: [`docs/SETUP_GUIDE_FOR_BEGINNERS.md`](docs/SETUP_GUIDE_FOR_BEGINNERS.md)
 - **Architecture**: [`docs/ARCHITECTURE_EXPLAINED.md`](docs/ARCHITECTURE_EXPLAINED.md)
-- **Video Demo**: [`docs/video/VIDEO_RESOURCES_README.md`](docs/video/VIDEO_RESOURCES_README.md)
 - **Sample Queries**: [`docs/sample_queries.json`](docs/sample_queries.json)
 
 ## 🎓 Learning Outcomes
@@ -211,10 +208,6 @@ MIT License - feel free to use this project for learning or as a foundation for 
 
 ## 📧 Contact
 
-**Your Name** - [your.email@example.com](mailto:your.email@example.com)
 
 Project Link: [https://github.com/yourusername/AI_Customer_Agent](https://github.com/yourusername/AI_Customer_Agent)
 
----
-
-⭐ If you found this project helpful, please consider giving it a star!
