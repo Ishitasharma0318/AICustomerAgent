@@ -3,12 +3,43 @@ LangGraph workflow implementation
 Orchestrates the multi-agent system
 """
 
+import sys
+import os
 from typing import Literal
 from langgraph.graph import StateGraph, END
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 
-from .state import AgentState
-from agents import SupervisorAgent, TechnicalSupportAgent, ConfigurationAgent, BillingAgent
+# Add parent directory to path to import agents
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from graph.state import AgentState
+from agents.supervisor import SupervisorAgent
+from agents.technical_agent import TechnicalSupportAgent
+from agents.configuration_agent import ConfigurationAgent
+from agents.billing_agent import BillingAgent
+
+
+# Global agent instances (initialized once)
+_supervisor = None
+_technical_agent = None
+_configuration_agent = None
+_billing_agent = None
+
+
+def get_agents():
+    """Initialize and return singleton agent instances"""
+    global _supervisor, _technical_agent, _configuration_agent, _billing_agent
+    
+    if _supervisor is None:
+        _supervisor = SupervisorAgent()
+    if _technical_agent is None:
+        _technical_agent = TechnicalSupportAgent()
+    if _configuration_agent is None:
+        _configuration_agent = ConfigurationAgent()
+    if _billing_agent is None:
+        _billing_agent = BillingAgent()
+    
+    return _supervisor, _technical_agent, _configuration_agent, _billing_agent
 
 
 def create_workflow():
@@ -18,12 +49,6 @@ def create_workflow():
     Returns:
         Compiled workflow graph
     """
-    # Initialize agents
-    supervisor = SupervisorAgent()
-    technical_agent = TechnicalSupportAgent()
-    configuration_agent = ConfigurationAgent()
-    billing_agent = BillingAgent()
-    
     # Define the workflow graph
     workflow = StateGraph(AgentState)
     
@@ -53,13 +78,11 @@ def create_workflow():
     workflow.add_edge("configuration", END)
     workflow.add_edge("billing", END)
     
-    # TODO: Compile and return in Stage 5
-    # return workflow.compile()
-    
-    return workflow
+    # Compile and return
+    return workflow.compile()
 
 
-def supervisor_node(state: AgentState) -> AgentState:
+async def supervisor_node(state: AgentState) -> AgentState:
     """
     Supervisor node - routes queries to appropriate agent
     
@@ -69,11 +92,32 @@ def supervisor_node(state: AgentState) -> AgentState:
     Returns:
         Updated state with routing decision
     """
-    # TODO: Implement in Stage 5
-    pass
+    supervisor, _, _, _ = get_agents()
+    
+    # Get the latest user message
+    messages = state.get("messages", [])
+    if not messages:
+        return {
+            **state,
+            "next_agent": "end",
+            "routing_decision": {"error": "No messages to route"}
+        }
+    
+    latest_message = messages[-1]
+    message_content = latest_message.content if hasattr(latest_message, 'content') else str(latest_message)
+    
+    # Route the query
+    routing_decision = await supervisor.route_query(message_content, messages)
+    
+    # Update state with routing decision
+    return {
+        **state,
+        "next_agent": routing_decision["next_agent"],
+        "routing_decision": routing_decision
+    }
 
 
-def technical_node(state: AgentState) -> AgentState:
+async def technical_node(state: AgentState) -> AgentState:
     """
     Technical support node
     
@@ -83,11 +127,31 @@ def technical_node(state: AgentState) -> AgentState:
     Returns:
         Updated state with technical response
     """
-    # TODO: Implement in Stage 4-5
-    pass
+    _, technical_agent, _, _ = get_agents()
+    
+    # Get the latest user message
+    messages = state.get("messages", [])
+    latest_message = messages[-1]
+    message_content = latest_message.content if hasattr(latest_message, 'content') else str(latest_message)
+    
+    # Get session ID
+    session_id = state.get("session_id", "default")
+    
+    # Process the query
+    response = await technical_agent.process(message_content, messages, session_id)
+    
+    # Create AI message with response
+    ai_message = AIMessage(content=response["response"])
+    
+    # Update state
+    return {
+        **state,
+        "messages": [ai_message],
+        "next_agent": "end"
+    }
 
 
-def configuration_node(state: AgentState) -> AgentState:
+async def configuration_node(state: AgentState) -> AgentState:
     """
     Configuration agent node
     
@@ -97,11 +161,31 @@ def configuration_node(state: AgentState) -> AgentState:
     Returns:
         Updated state with configuration response
     """
-    # TODO: Implement in Stage 4-5
-    pass
+    _, _, configuration_agent, _ = get_agents()
+    
+    # Get the latest user message
+    messages = state.get("messages", [])
+    latest_message = messages[-1]
+    message_content = latest_message.content if hasattr(latest_message, 'content') else str(latest_message)
+    
+    # Get session ID
+    session_id = state.get("session_id", "default")
+    
+    # Process the query
+    response = await configuration_agent.process(message_content, messages, session_id)
+    
+    # Create AI message with response
+    ai_message = AIMessage(content=response["response"])
+    
+    # Update state
+    return {
+        **state,
+        "messages": [ai_message],
+        "next_agent": "end"
+    }
 
 
-def billing_node(state: AgentState) -> AgentState:
+async def billing_node(state: AgentState) -> AgentState:
     """
     Billing agent node
     
@@ -111,8 +195,28 @@ def billing_node(state: AgentState) -> AgentState:
     Returns:
         Updated state with billing response
     """
-    # TODO: Implement in Stage 4-5
-    pass
+    _, _, _, billing_agent = get_agents()
+    
+    # Get the latest user message
+    messages = state.get("messages", [])
+    latest_message = messages[-1]
+    message_content = latest_message.content if hasattr(latest_message, 'content') else str(latest_message)
+    
+    # Get session ID
+    session_id = state.get("session_id", "default")
+    
+    # Process the query
+    response = await billing_agent.process(message_content, messages, session_id)
+    
+    # Create AI message with response
+    ai_message = AIMessage(content=response["response"])
+    
+    # Update state
+    return {
+        **state,
+        "messages": [ai_message],
+        "next_agent": "end"
+    }
 
 
 def route_to_agent(state: AgentState) -> Literal["technical", "configuration", "billing", "end"]:
@@ -125,8 +229,7 @@ def route_to_agent(state: AgentState) -> Literal["technical", "configuration", "
     Returns:
         Name of next agent to route to
     """
-    # TODO: Implement routing logic in Stage 5
-    next_agent = state.get("next_agent", "technical")
+    next_agent = state.get("next_agent", "end")
     
     if next_agent in ["technical", "configuration", "billing"]:
         return next_agent
