@@ -228,7 +228,7 @@ async def chat_stream(request: ChatRequest):
                 # Log the event for debugging
                 logger.debug(f"[{session_id}] Event: {event}")
                 
-                # Check each node output for agent type
+                # Check each node output for agent type and response
                 for node_name, node_output in event.items():
                     if node_name != "__end__" and isinstance(node_output, dict):
                         # Stream progress updates
@@ -237,6 +237,19 @@ async def chat_stream(request: ChatRequest):
                             "node": node_name,
                         }
                         yield f"data: {json.dumps(progress)}\n\n"
+                        
+                        # Capture response from worker nodes (only AI messages)
+                        if "messages" in node_output:
+                            node_messages = node_output.get("messages", [])
+                            if node_messages:
+                                # Get the last AI message (not human message)
+                                for msg in reversed(node_messages):
+                                    # Only capture AIMessage, not HumanMessage
+                                    if hasattr(msg, '__class__') and msg.__class__.__name__ == 'AIMessage':
+                                        if hasattr(msg, 'content') and msg.content:
+                                            response_text = msg.content
+                                            logger.info(f"[{session_id}] Captured AI response from {node_name}: {len(response_text)} chars")
+                                            break
                         
                         # Capture agent_type from worker nodes
                         if "routing_decision" in node_output:
