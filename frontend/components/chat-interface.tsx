@@ -100,7 +100,7 @@ export function ChatInterface() {
 
       for await (const event of stream) {
         handleStreamEvent(event, assistantMessageId, (content, agentType, sources) => {
-          fullResponse = content;
+          if (content) fullResponse += content; // Accumulate content chunks
           if (agentType) finalAgentType = agentType;
           if (sources) finalSources = sources;
         });
