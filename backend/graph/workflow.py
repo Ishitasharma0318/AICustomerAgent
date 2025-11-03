@@ -143,11 +143,16 @@ async def technical_node(state: AgentState) -> AgentState:
     # Create AI message with response
     ai_message = AIMessage(content=response["response"])
     
+    # Update routing decision with sources
+    routing_decision = state.get("routing_decision", {})
+    routing_decision["sources"] = response.get("sources", [])
+    
     # Update state
     return {
         **state,
         "messages": [ai_message],
-        "next_agent": "end"
+        "next_agent": "end",
+        "routing_decision": routing_decision
     }
 
 
@@ -177,11 +182,16 @@ async def configuration_node(state: AgentState) -> AgentState:
     # Create AI message with response
     ai_message = AIMessage(content=response["response"])
     
+    # Update routing decision with sources
+    routing_decision = state.get("routing_decision", {})
+    routing_decision["sources"] = response.get("sources", [])
+    
     # Update state
     return {
         **state,
         "messages": [ai_message],
-        "next_agent": "end"
+        "next_agent": "end",
+        "routing_decision": routing_decision
     }
 
 
@@ -211,11 +221,16 @@ async def billing_node(state: AgentState) -> AgentState:
     # Create AI message with response
     ai_message = AIMessage(content=response["response"])
     
+    # Update routing decision with sources
+    routing_decision = state.get("routing_decision", {})
+    routing_decision["sources"] = response.get("sources", [])
+    
     # Update state
     return {
         **state,
         "messages": [ai_message],
-        "next_agent": "end"
+        "next_agent": "end",
+        "routing_decision": routing_decision
     }
 
 
