@@ -228,6 +228,23 @@ async def chat_stream(request: ChatRequest):
                 # Log the event for debugging
                 logger.debug(f"[{session_id}] Event: {event}")
                 
+                # Check each node output for agent type
+                for node_name, node_output in event.items():
+                    if node_name != "__end__" and isinstance(node_output, dict):
+                        # Stream progress updates
+                        progress = {
+                            "type": "progress",
+                            "node": node_name,
+                        }
+                        yield f"data: {json.dumps(progress)}\n\n"
+                        
+                        # Capture agent_type from worker nodes
+                        if "routing_decision" in node_output:
+                            routing_dec = node_output.get("routing_decision", {})
+                            if "agent_type" in routing_dec:
+                                agent_type_str = routing_dec["agent_type"]
+                                logger.info(f"[{session_id}] Captured agent_type from {node_name}: {agent_type_str}")
+                
                 # Check if this is a final result
                 if "__end__" in event:
                     final_result = event["__end__"]
@@ -238,9 +255,13 @@ async def chat_stream(request: ChatRequest):
                         last_message = final_messages[-1]
                         response_text = last_message.content if hasattr(last_message, 'content') else str(last_message)
                     
-                    # Get routing decision
+                    # Get routing decision and agent type
                     routing_decision = final_result.get("routing_decision", {})
-                    agent_type_str = routing_decision.get("agent_type") or routing_decision.get("next_agent", "supervisor")
+                    # Try to get agent_type from routing_decision, or use what we captured from node events
+                    final_agent_type = routing_decision.get("agent_type") or routing_decision.get("next_agent")
+                    if final_agent_type and final_agent_type != "supervisor":
+                        agent_type_str = final_agent_type
+                    
                     sources_raw = routing_decision.get("sources", [])
                     # Convert source dictionaries to strings (filenames only)
                     sources = []
@@ -251,15 +272,6 @@ async def chat_stream(request: ChatRequest):
                             sources.append(source)
                         else:
                             sources.append(str(source))
-                
-                # Stream progress updates
-                for node_name, node_output in event.items():
-                    if node_name != "__end__":
-                        progress = {
-                            "type": "progress",
-                            "node": node_name,
-                        }
-                        yield f"data: {json.dumps(progress)}\n\n"
             
             # Stream the final response (character by character for better UX)
             for i in range(0, len(response_text), 5):  # Stream in chunks of 5 chars
