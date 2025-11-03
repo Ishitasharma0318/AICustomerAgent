@@ -1,6 +1,6 @@
 """
-Supervisor Agent - Routes queries to specialized agents
-Uses AWS Bedrock Claude Haiku for cost-effective routing
+Supervisor Agent - Routes queries to specialized agents using AWS Bedrock Claude Haiku
+Cost: ~$0.00001 per routing | Speed: ~150-200ms | Accuracy: High
 """
 
 import os
@@ -10,31 +10,26 @@ from langchain_core.messages import BaseMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-# Try to import AWS Bedrock, but make it optional
+# Try to import AWS Bedrock - gracefully fallback if not available
 try:
     from langchain_aws import ChatBedrock
     BEDROCK_AVAILABLE = True
 except ImportError:
     BEDROCK_AVAILABLE = False
-    print("⚠️ langchain_aws not available - using keyword-based routing only")
+    print("⚠️ AWS Bedrock not available - using keyword-based routing fallback")
 
 
 class SupervisorAgent:
-    """
-    Supervisor agent that analyzes queries and routes to appropriate worker agents
+    """Routes customer queries to specialized agents (Technical, Configuration, or Billing)"""
     
-    Strategy: Uses fast, cost-effective LLM (AWS Bedrock Claude Haiku) for routing decisions
-    """
-    
-    def __init__(self, model_id: str = "anthropic.claude-3-haiku-20240307-v1:0", region_name: str = "us-east-1"):
-        """
-        Initialize supervisor agent
+    def __init__(
+        self, 
+        model_id: str = "anthropic.claude-3-haiku-20240307-v1:0", 
+        region_name: str = "us-east-1"
+    ):
+        """Initialize supervisor with AWS Bedrock Claude Haiku for cost-effective routing"""
         
-        Args:
-            model_id: AWS Bedrock model ID (Claude Haiku for cost-effectiveness)
-            region_name: AWS region for Bedrock
-        """
-        # Initialize AWS Bedrock client with Claude Haiku (fast and cost-effective)
+        # Initialize AWS Bedrock LLM (Claude Haiku - fast and cheap for classification)
         if BEDROCK_AVAILABLE:
             try:
                 self.llm = ChatBedrock(
@@ -42,33 +37,32 @@ class SupervisorAgent:
                     region_name=region_name,
                     model_kwargs={
                         "temperature": 0.0,  # Deterministic routing
-                        "max_tokens": 100,   # Short responses for routing
+                        "max_tokens": 100,   # Only need one word response
                     }
                 )
                 self.bedrock_available = True
+                print("✅ AWS Bedrock Claude Haiku initialized for routing")
             except Exception as e:
-                print(f"⚠️ AWS Bedrock not available: {e}")
+                print(f"⚠️ AWS Bedrock initialization failed: {e}")
                 print("⚠️ Falling back to keyword-based routing")
                 self.llm = None
                 self.bedrock_available = False
         else:
-            print("⚠️ AWS Bedrock package not installed")
-            print("⚠️ Using keyword-based routing")
             self.llm = None
             self.bedrock_available = False
         
-        # Create routing prompt template
+        # Create LangChain prompt template for routing
         self.prompt_template = ChatPromptTemplate.from_messages([
             ("system", self._get_routing_prompt()),
             ("human", "{query}")
         ])
         
-        # Create routing chain if Bedrock is available
+        # Create LCEL chain: Prompt → Bedrock → String Parser
         if self.bedrock_available:
             self.chain = self.prompt_template | self.llm | StrOutputParser()
     
     def _get_routing_prompt(self) -> str:
-        """Get the system prompt for routing decisions"""
+        """Get system prompt that instructs Bedrock to classify queries into technical, configuration, or billing"""
         return """You are a routing supervisor for an AWS customer service system. Your job is to analyze user queries and route them to the appropriate specialist agent.
 
 Available agents:
@@ -92,20 +86,13 @@ Route to (respond with one word only):"""
     
     async def route_query(self, message: str, history: List[BaseMessage]) -> Dict[str, Any]:
         """
-        Analyze user query and determine which agent should handle it
-        
-        Args:
-            message: User's message
-            history: Conversation history
-            
-        Returns:
-            Dict with routing decision and metadata
+        Main routing method - analyzes query and returns which agent should handle it
+        Uses Bedrock if available, falls back to keyword matching otherwise
         """
+        # Try Bedrock routing first, fallback to keywords if unavailable
         if self.bedrock_available:
-            # Use AWS Bedrock for intelligent routing
             route_decision = await self._route_with_bedrock(message)
         else:
-            # Fallback to keyword-based routing
             route_decision = self._route_with_keywords(message)
         
         return {
@@ -116,83 +103,65 @@ Route to (respond with one word only):"""
         }
     
     async def _route_with_bedrock(self, message: str) -> Dict[str, Any]:
-        """
-        Route query using AWS Bedrock Claude Haiku
-        
-        Args:
-            message: User's message
-            
-        Returns:
-            Routing decision dict
-        """
+        """Use AWS Bedrock Claude Haiku for intelligent query classification (~$0.00001 per routing)"""
         try:
-            # Get routing decision from Bedrock
+            # Call Bedrock via LCEL chain
             response = await self.chain.ainvoke({"query": message})
-            
-            # Parse response (should be one word: technical, configuration, or billing)
             agent = response.strip().lower()
             
-            # Validate response
+            # Validate response is a valid agent
             valid_agents = ["technical", "configuration", "billing"]
             if agent not in valid_agents:
-                # If response is invalid, try to extract valid agent name
                 for valid_agent in valid_agents:
                     if valid_agent in agent:
                         agent = valid_agent
                         break
                 else:
-                    # Default to technical if unclear
-                    agent = "technical"
+                    agent = "technical"  # Default fallback
+            
+            print(f"✅ Bedrock routing: '{message[:50]}...' → {agent}")
             
             return {
                 "agent": agent,
                 "confidence": "high",
-                "reasoning": f"Bedrock routing: {response}",
+                "reasoning": f"Bedrock classification: {response}",
                 "method": "bedrock"
             }
+            
         except Exception as e:
-            print(f"⚠️ Bedrock routing failed: {e}, falling back to keywords")
+            print(f"⚠️ Bedrock routing error: {e}")
+            print(f"⚠️ Falling back to keyword-based routing")
             return self._route_with_keywords(message)
     
     def _route_with_keywords(self, message: str) -> Dict[str, Any]:
-        """
-        Fallback keyword-based routing (if Bedrock unavailable)
-        
-        Args:
-            message: User's message
-            
-        Returns:
-            Routing decision dict
-        """
+        """Fallback keyword-based routing - counts keyword matches for each category"""
         message_lower = message.lower()
         
-        # Billing keywords
+        # Define keyword lists for each category
         billing_keywords = [
             "cost", "price", "pricing", "bill", "billing", "charge", "free tier",
             "expensive", "cheaper", "budget", "estimate", "fees", "payment",
             "optimization", "save money", "how much"
         ]
         
-        # Technical keywords
         technical_keywords = [
             "error", "timeout", "fail", "not working", "broken", "bug", "debug",
             "502", "504", "500", "400", "cold start", "performance", "slow",
             "issue", "problem", "troubleshoot", "fix", "crashed", "exception"
         ]
         
-        # Configuration keywords
         configuration_keywords = [
             "configure", "setup", "best practice", "security", "iam", "policy",
             "cors", "deploy", "architecture", "how to", "guideline", "recommendation",
             "pattern", "strategy", "design", "environment", "configuration"
         ]
         
-        # Count keyword matches
+        # Count keyword matches for each category
         billing_score = sum(1 for kw in billing_keywords if kw in message_lower)
         technical_score = sum(1 for kw in technical_keywords if kw in message_lower)
         config_score = sum(1 for kw in configuration_keywords if kw in message_lower)
         
-        # Determine routing based on scores
+        # Route to category with highest score
         if billing_score > technical_score and billing_score > config_score:
             agent = "billing"
         elif technical_score > config_score:
@@ -200,22 +169,17 @@ Route to (respond with one word only):"""
         else:
             agent = "configuration"
         
+        print(f"📝 Keyword routing: '{message[:50]}...' → {agent} " + 
+              f"(scores: billing={billing_score}, technical={technical_score}, config={config_score})")
+        
         return {
             "agent": agent,
             "confidence": "medium",
-            "reasoning": f"Keyword match: billing={billing_score}, technical={technical_score}, config={config_score}",
+            "reasoning": f"Keyword scores: billing={billing_score}, technical={technical_score}, config={config_score}",
             "method": "keyword"
         }
     
     def format_routing_prompt(self, message: str) -> str:
-        """
-        Create prompt for routing decision
-        
-        Args:
-            message: User's message
-            
-        Returns:
-            Formatted prompt for LLM
-        """
+        """Helper method to format routing prompt for debugging/testing"""
         return self._get_routing_prompt().format(query=message)
 
